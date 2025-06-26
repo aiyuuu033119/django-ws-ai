@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(django-admin startproject:*)",
+      "Bash(python:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(./venv/bin/pip install:*)",
+      "Bash(./venv/bin/django-admin startproject websocket_project .)",
+      "Bash(./venv/bin/python -m django startproject:*)",
+      "Bash(touch:*)"
+    ],
+    "deny": []
+  }
+}

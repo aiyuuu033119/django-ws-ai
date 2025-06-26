@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Chat Room - {{ room_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chat-log {
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .username {
+            font-weight: bold;
+            color: #333;
+        }
+        .message-text {
+            color: #666;
+        }
+        .bot-message {
+            background-color: #e3f2fd;
+            padding: 5px;
+            border-radius: 5px;
+            border-left: 3px solid #2196F3;
+        }
+        .bot-username {
+            color: #2196F3;
+        }
+        .help-text {
+            color: #666;
+            font-style: italic;
+            margin: 10px 0;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            width: calc(100% - 100px);
+        }
+        input[type="button"] {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="button"]:hover {
+            background-color: #45a049;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Room: {{ room_name }}</h1>
+    <div id="status" class="status">Connecting...</div>
+    <div class="help-text">AI Assistant is active - all your messages will get AI responses!</div>
+    
+    <div id="chat-log"></div>
+    
+    <div class="input-group">
+        <input id="username-input" type="text" placeholder="Your name" value="User">
+        <input id="username-button" type="button" value="Set Name">
+    </div>
+    
+    <div class="input-group">
+        <input id="chat-message-input" type="text" placeholder="Type your message here...">
+        <input id="chat-message-submit" type="button" value="Send">
+    </div>
+
+    {{ room_name|json_script:"room-name" }}
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        let username = 'User';
+        
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+        );
+
+        const statusDiv = document.getElementById('status');
+        const chatLog = document.getElementById('chat-log');
+
+        chatSocket.onopen = function(e) {
+            statusDiv.textContent = 'Connected to room: ' + roomName;
+            statusDiv.className = 'status connected';
+            addSystemMessage('Connected to chat room');
+        };
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            addMessage(data.username, data.message);
+        };
+
+        chatSocket.onclose = function(e) {
+            statusDiv.textContent = 'Disconnected from room';
+            statusDiv.className = 'status disconnected';
+            addSystemMessage('Disconnected from chat room');
+        };
+
+        chatSocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+            addSystemMessage('Error: Connection failed');
+        };
+
+        function addMessage(username, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            // Check if it's a bot message
+            if (username === 'AI Assistant' || username === 'GPT Bot') {
+                messageDiv.classList.add('bot-message');
+                messageDiv.innerHTML = '<span class="username bot-username">' + escapeHtml(username) + ':</span> ' +
+                                       '<span class="message-text">' + escapeHtml(message) + '</span>';
+            } else {
+                messageDiv.innerHTML = '<span class="username">' + escapeHtml(username) + ':</span> ' +
+                                       '<span class="message-text">' + escapeHtml(message) + '</span>';
+            }
+            
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function addSystemMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.style.fontStyle = 'italic';
+            messageDiv.style.color = '#999';
+            messageDiv.textContent = message;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        document.querySelector('#username-button').onclick = function(e) {
+            username = document.querySelector('#username-input').value || 'User';
+            addSystemMessage('Name set to: ' + username);
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'username': username
+                }));
+                messageInputDom.value = '';
+            }
+        };
+    </script>
+</body>
+</html>

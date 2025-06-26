@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(python manage.py:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(./venv/bin/pip show openai)",
+      "Bash(env)",
+      "Bash(pkill:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}
